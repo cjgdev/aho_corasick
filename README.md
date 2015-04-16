@@ -5,6 +5,9 @@ This is a header only implementation of the aho-corasick pattern search algorith
 To compile the code, your compiler must minimally support the following features of the C++11 standard:
 - Range-based for loops.
 - std::unique_ptr.
+- auto.
+
+Additionally, the benchmark makes use of chrono.
 
 ## Usage
 
