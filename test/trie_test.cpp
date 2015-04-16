@@ -134,12 +134,11 @@ TEST_CASE("trie works as required", "[trie]") {
 		t.add_keyword(std::string("ababc"));
 
 		auto emits = t.parse_text(std::string("ababcbab"));
-		REQUIRE(3 == emits.size());
+		REQUIRE(2 == emits.size());
 
 		auto it = emits.begin();
-		check_emit(*it++, 0, 1, std::string("ab"));
-		check_emit(*it++, 2, 3, std::string("ab"));
-		check_emit(*it++, 4, 6, std::string("cba"));
+		check_emit(*it++, 0, 4, std::string("ababc"));
+		check_emit(*it++, 6, 7, std::string("ab"));
 	}
 	SECTION("partial match") {
 		ac::trie t;

@@ -198,7 +198,10 @@ namespace aho_corasick {
 		interval_collection remove_overlaps(const interval_collection& intervals) {
 			interval_collection result(intervals.begin(), intervals.end());
 			std::sort(result.begin(), result.end(), [](const T& a, const T& b) -> bool {
-				return a.get_start() < b.get_start();
+				if (b.size() - a.size() == 0) {
+					return a.get_start() > b.get_start();
+				}
+				return a.size() > b.size();
 			});
 			std::set<T> remove_tmp;
 			for (const auto& i : result) {
@@ -216,10 +219,7 @@ namespace aho_corasick {
 				);
 			}
 			std::sort(result.begin(), result.end(), [](const T& a, const T& b) -> bool {
-				if (b.size() - a.size() == 0) {
-					return a.get_start() < b.get_start();
-				}
-				return a.size() < b.size();
+				return a.get_start() < b.get_start();
 			});
 			return interval_collection(result);
 		}
