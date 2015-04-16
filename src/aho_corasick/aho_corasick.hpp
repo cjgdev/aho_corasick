@@ -34,24 +34,8 @@
 
 namespace aho_corasick {
 
-	// interval_i interface
-	class interval_i {
-	public:
-		virtual size_t get_start() const = 0;
-		virtual size_t get_end() const = 0;
-		virtual size_t size() const = 0;
-
-		bool operator !=(const interval_i& other) const {
-			return get_start() != other.get_start() || get_end() != other.get_end();
-		}
-
-		bool operator ==(const interval_i& other) const {
-			return get_start() == other.get_start() && get_end() == other.get_end();
-		}
-	};
-
 	// class interval
-	class interval: public interval_i {
+	class interval {
 		size_t d_start;
 		size_t d_end;
 
@@ -60,9 +44,9 @@ namespace aho_corasick {
 			: d_start(start)
 			, d_end(end) {}
 
-		size_t get_start() const override { return d_start; }
-		size_t get_end() const override { return d_end; }
-		size_t size() const override { return d_end - d_start + 1; }
+		size_t get_start() const { return d_start; }
+		size_t get_end() const { return d_end; }
+		size_t size() const { return d_end - d_start + 1; }
 
 		bool overlaps_with(const interval& other) const {
 			return d_start <= other.d_end && d_end >= other.d_start;
@@ -72,143 +56,151 @@ namespace aho_corasick {
 			return d_start <= point && point <= d_end;
 		}
 
-		bool operator <(const interval_i& other) const {
+		bool operator <(const interval& other) const {
 			return get_start() < other.get_start();
 		}
-	};
 
-	typedef std::vector<interval> interval_list;
-
-	// class interval_node
-	class interval_node {
-		enum direction {
-			LEFT, RIGHT
-		};
-
-		using interval_node_ptr = std::unique_ptr < interval_node > ;
-
-		interval_node_ptr d_left;
-		interval_node_ptr d_right;
-		size_t            d_point;
-		interval_list     d_intervals;
-
-	public:
-		interval_node(const interval_list& intervals)
-			: d_left(nullptr)
-			, d_right(nullptr)
-			, d_point(0)
-			, d_intervals() {
-			d_point = determine_median(intervals);
-			interval_list to_left, to_right;
-			for (const auto& i : intervals) {
-				if (i.get_end() < d_point) {
-					to_left.push_back(i);
-				} else if (i.get_start() > d_point) {
-					to_right.push_back(i);
-				} else {
-					d_intervals.push_back(i);
-				}
-			}
-			if (to_left.size() > 0) {
-				d_left.reset(new interval_node(to_left));
-			}
-			if (to_right.size() > 0) {
-				d_right.reset(new interval_node(to_right));
-			}
+		bool operator !=(const interval& other) const {
+			return get_start() != other.get_start() || get_end() != other.get_end();
 		}
 
-		virtual ~interval_node() = default;
-
-		size_t determine_median(const interval_list& intervals) const {
-			size_t start = -1;
-			size_t end = -1;
-			for (const auto& i : intervals) {
-				size_t cur_start = i.get_start();
-				size_t cur_end = i.get_end();
-				if (start == -1 || cur_start < start) {
-					start = cur_start;
-				}
-				if (end == -1 || cur_end > end) {
-					end = cur_end;
-				}
-			}
-			return (start + end) / 2;
-		}
-
-		interval_list find_overlaps(const interval_i& i) {
-			interval_list overlaps;
-			if (d_point < i.get_start()) {
-				add_to_overlaps(i, overlaps, find_overlapping_ranges(d_right, i));
-				add_to_overlaps(i, overlaps, check_right_overlaps(i));
-			} else if (d_point > i.get_end()) {
-				add_to_overlaps(i, overlaps, find_overlapping_ranges(d_left, i));
-				add_to_overlaps(i, overlaps, check_left_overlaps(i));
-			} else {
-				add_to_overlaps(i, overlaps, d_intervals);
-				add_to_overlaps(i, overlaps, find_overlapping_ranges(d_left, i));
-				add_to_overlaps(i, overlaps, find_overlapping_ranges(d_right, i));
-			}
-			return interval_list(overlaps);
-		}
-
-	protected:
-		void add_to_overlaps(const interval_i& i, interval_list& overlaps, interval_list new_overlaps) const {
-			for (const auto& cur : new_overlaps) {
-				if (cur != i) {
-					overlaps.push_back(cur);
-				}
-			}
-		}
-
-		interval_list check_left_overlaps(const interval_i& i) const {
-			return interval_list(check_overlaps(i, LEFT));
-		}
-
-		interval_list check_right_overlaps(const interval_i& i) const {
-			return interval_list(check_overlaps(i, RIGHT));
-		}
-
-		interval_list check_overlaps(const interval_i& i, direction d) const {
-			interval_list overlaps;
-			for (const auto& cur : d_intervals) {
-				switch (d) {
-				case LEFT:
-					if (cur.get_start() <= i.get_end()) {
-						overlaps.push_back(cur);
-					}
-					break;
-				case RIGHT:
-					if (cur.get_end() >= i.get_start()) {
-						overlaps.push_back(cur);
-					}
-					break;
-				}
-			}
-			return interval_list(overlaps);
-		}
-
-		interval_list find_overlapping_ranges(interval_node_ptr& node, const interval_i& i) const {
-			if (node) {
-				return interval_list(node->find_overlaps(i));
-			}
-			return interval_list();
+		bool operator ==(const interval& other) const {
+			return get_start() == other.get_start() && get_end() == other.get_end();
 		}
 	};
 
 	// class interval_tree
+	template<typename T>
 	class interval_tree {
-		interval_node d_root;
+	public:
+		using interval_collection = std::vector<T>;
+		
+	private:
+		// class node
+		class node {
+			enum direction {
+				LEFT, RIGHT
+			};
+			using node_ptr = std::unique_ptr<node>;
+
+			size_t              d_point;
+			node_ptr            d_left;
+			node_ptr            d_right;
+			interval_collection d_intervals;
+
+		public:
+			node(const interval_collection& intervals)
+				: d_point(0)
+				, d_left(nullptr)
+				, d_right(nullptr)
+				, d_intervals()
+			{
+				d_point = determine_median(intervals);
+				interval_collection to_left, to_right;
+				for (const auto& i : intervals) {
+					if (i.get_end() < d_point) {
+						to_left.push_back(i);
+					} else if (i.get_start() > d_point) {
+						to_right.push_back(i);
+					} else {
+						d_intervals.push_back(i);
+					}
+				}
+				if (to_left.size() > 0) {
+					d_left.reset(new node(to_left));
+				}
+				if (to_right.size() > 0) {
+					d_right.reset(new node(to_right));
+				}
+			}
+
+			size_t determine_median(const interval_collection& intervals) const {
+				size_t start = -1;
+				size_t end = -1;
+				for (const auto& i : intervals) {
+					size_t cur_start = i.get_start();
+					size_t cur_end = i.get_end();
+					if (start == -1 || cur_start < start) {
+						start = cur_start;
+					}
+					if (end == -1 || cur_end > end) {
+						end = cur_end;
+					}
+				}
+				return (start + end) / 2;
+			}
+
+			interval_collection find_overlaps(const T& i) {
+				interval_collection overlaps;
+				if (d_point < i.get_start()) {
+					add_to_overlaps(i, overlaps, find_overlapping_ranges(d_right, i));
+					add_to_overlaps(i, overlaps, check_right_overlaps(i));
+				} else if (d_point > i.get_end()) {
+					add_to_overlaps(i, overlaps, find_overlapping_ranges(d_left, i));
+					add_to_overlaps(i, overlaps, check_left_overlaps(i));
+				} else {
+					add_to_overlaps(i, overlaps, d_intervals);
+					add_to_overlaps(i, overlaps, find_overlapping_ranges(d_left, i));
+					add_to_overlaps(i, overlaps, find_overlapping_ranges(d_right, i));
+				}
+				return interval_collection(overlaps);
+			}
+
+		protected:
+			void add_to_overlaps(const T& i, interval_collection& overlaps, interval_collection new_overlaps) const {
+				for (const auto& cur : new_overlaps) {
+					if (cur != i) {
+						overlaps.push_back(cur);
+					}
+				}
+			}
+
+			interval_collection check_left_overlaps(const T& i) const {
+				return interval_collection(check_overlaps(i, LEFT));
+			}
+
+			interval_collection check_right_overlaps(const T& i) const {
+				return interval_collection(check_overlaps(i, RIGHT));
+			}
+
+			interval_collection check_overlaps(const T& i, direction d) const {
+				interval_collection overlaps;
+				for (const auto& cur : d_intervals) {
+					switch (d) {
+					case LEFT:
+						if (cur.get_start() <= i.get_end()) {
+							overlaps.push_back(cur);
+						}
+						break;
+					case RIGHT:
+						if (cur.get_end() >= i.get_start()) {
+							overlaps.push_back(cur);
+						}
+						break;
+					}
+				}
+				return interval_collection(overlaps);
+			}
+
+			interval_collection find_overlapping_ranges(node_ptr& node, const T& i) const {
+				if (node) {
+					return interval_collection(node->find_overlaps(i));
+				}
+				return interval_collection();
+			}
+		};
+		node d_root;
 
 	public:
-		interval_tree(const interval_list& intervals)
+		interval_tree(const interval_collection& intervals)
 			: d_root(intervals) {}
 
-		interval_list remove_overlaps(const interval_list& intervals) {
-			interval_list result(intervals.begin(), intervals.end());
-			std::sort(result.begin(), result.end(), [](const interval_i& a, const interval_i& b) -> bool {
-				return a.get_start() > b.get_start();
+		interval_collection remove_overlaps(const interval_collection& intervals) {
+			interval_collection result(intervals.begin(), intervals.end());
+			std::sort(result.begin(), result.end(), [](const T& a, const T& b) -> bool {
+				return a.get_start() < b.get_start();
 			});
-			std::set<interval> remove_tmp;
+			std::set<T> remove_tmp;
 			for (const auto& i : result) {
 				if (remove_tmp.find(i) != remove_tmp.end()) {
 					continue;
@@ -221,23 +213,21 @@ namespace aho_corasick {
 			for (const auto& i : remove_tmp) {
 				result.erase(
 					std::find(result.begin(), result.end(), i)
-					);
+				);
 			}
-			std::sort(result.begin(), result.end(), [](const interval_i& a, const interval_i& b) -> bool {
+			std::sort(result.begin(), result.end(), [](const T& a, const T& b) -> bool {
 				if (b.size() - a.size() == 0) {
-					return a.get_start() > b.get_start();
+					return a.get_start() < b.get_start();
 				}
-				return a.size() > b.size();
+				return a.size() < b.size();
 			});
-			return interval_list(result);
+			return interval_collection(result);
 		}
 
-		interval_list find_overlaps(const interval_i& i) {
-			return interval_list(d_root.find_overlaps(i));
+		interval_collection find_overlaps(const T& i) {
+			return interval_collection(d_root.find_overlaps(i));
 		}
 	};
-
-	// trie
 
 	// class emit
 	template<typename CharType>
@@ -246,88 +236,74 @@ namespace aho_corasick {
 		typedef std::basic_string<CharType>  string_type;
 		typedef std::basic_string<CharType>& string_ref_type;
 
-		typedef emit<CharType>*              ptr;
-		typedef emit<CharType>&              reference;
-
 	private:
 		string_type d_keyword;
 
 	public:
+		emit()
+			: interval(-1, -1)
+			, d_keyword() {}
+
 		emit(size_t start, size_t end, const string_ref_type keyword)
 			: interval(start, end)
 			, d_keyword(keyword) {}
 
 		string_type get_keyword() const { return string_type(d_keyword); }
+		bool is_empty() const { return (get_start() == -1 && get_end() == -1); }
 	};
 
 	// class token
 	template<typename CharType>
 	class token {
 	public:
-		using string_type = std::basic_string < CharType > ;
-		using string_ref_type = std::basic_string<CharType>&;
-		using emit_ptr = std::unique_ptr < emit<CharType> > ;
+		enum token_type{
+			TYPE_FRAGMENT,
+			TYPE_MATCH,
+		};
 
-		typedef token<CharType> *ptr;
-		typedef token<CharType> &reference;
+		using string_type     = std::basic_string<CharType>;
+		using string_ref_type = std::basic_string<CharType>&;
+		using emit_type       = emit<CharType>;
 
 	private:
+		token_type  d_type;
 		string_type d_fragment;
-		emit_ptr    d_emit;
+		emit_type   d_emit;
 
 	public:
 		token(const string_ref_type fragment)
-			: d_fragment(fragment)
-			, d_emit(nullptr) {}
+			: d_type(TYPE_FRAGMENT)
+			, d_fragment(fragment)
+			, d_emit() {}
 
-		token(const string_ref_type fragment, emit_ptr e)
-			: d_fragment(fragment)
-			, d_emit(std::move(e)) {}
+		token(const string_ref_type fragment, const emit_type& e)
+			: d_type(TYPE_MATCH)
+			, d_fragment(fragment)
+			, d_emit(e) {}
 
+		bool is_match() const { return (d_type == TYPE_MATCH); }
 		string_type get_fragment() const { return string_type(d_fragment); }
-		emit_ptr get_emit() const { return d_emit; }
-
-		virtual bool is_match() const = 0;
-	};
-
-	// class fragment_token
-	template<typename CharType>
-	class fragment_token: public token < CharType > {
-	public:
-		fragment_token(const typename token<CharType>::string_ref_type fragment)
-			: token<CharType>(fragment) {}
-		virtual bool is_match() const override { return false; }
-	};
-
-	// class match_token
-	template<typename CharType>
-	class match_token: public token < CharType > {
-	public:
-		match_token(const typename token<CharType>::string_ref_type fragment, typename token<CharType>::emit_ptr e)
-			: token<CharType>(fragment, std::move(e)) {}
-		virtual bool is_match() const override { return true; }
+		emit_type get_emit() const { return d_emit; }
 	};
 
 	// class state
 	template<typename CharType>
 	class state {
 	public:
-		typedef state<CharType>*             ptr;
-		typedef state<CharType>&             reference;
-
-		typedef std::basic_string<CharType>  string_type;
-		typedef std::basic_string<CharType>& string_ref_type;
-
-		typedef std::set<string_type>        string_collection;
-		typedef std::vector<ptr>             state_collection;
-		typedef std::vector<CharType>        transition_collection;
+		typedef state<CharType>*                 ptr;
+		typedef std::unique_ptr<state<CharType>> unique_ptr;
+		typedef std::basic_string<CharType>      string_type;
+		typedef std::basic_string<CharType>&     string_ref_type;
+		typedef std::set<string_type>            string_collection;
+		typedef std::vector<ptr>                 state_collection;
+		typedef std::vector<CharType>            transition_collection;
 
 	private:
-		size_t                     d_depth;
-		state<CharType>           *d_root;
-		std::map<CharType, ptr>    d_success;
-		state<CharType>           *d_failure;
-		string_collection          d_emits;
+		size_t                         d_depth;
+		ptr                            d_root;
+		std::map<CharType, unique_ptr> d_success;
+		ptr                            d_failure;
+		string_collection              d_emits;
 
 	public:
 		state(): state(0) {}
@@ -338,18 +314,6 @@ namespace aho_corasick {
 			, d_success()
 			, d_failure(nullptr)
 			, d_emits() {}
-
-		//~state() {
-		//	d_emits.clear();
-		//	d_failure = nullptr;
-		//	for (auto s : d_success) {
-		//		delete s.second;
-		//	}
-		//	d_success.clear();
-		//	delete d_root;
-		//	d_root = nullptr;
-		//	d_depth = 0;
-		//}
 
 		ptr next_state(CharType character) const {
 			return next_state(character, false);
@@ -363,7 +327,7 @@ namespace aho_corasick {
 			auto next = next_state_ignore_root_state(character);
 			if (next == nullptr) {
 				next = new state<CharType>(d_depth + 1);
-				d_success[character] = next;
+				d_success[character].reset(next);
 			}
 			return next;
 		}
@@ -390,7 +354,7 @@ namespace aho_corasick {
 		state_collection get_states() const {
 			state_collection result;
 			for (auto it = d_success.cbegin(); it != d_success.cend(); ++it) {
-				result.push_back(it->second);
+				result.push_back(it->second.get());
 			}
 			return state_collection(result);
 		}
@@ -408,7 +372,7 @@ namespace aho_corasick {
 			ptr result = nullptr;
 			auto found = d_success.find(character);
 			if (found != d_success.end()) {
-				result = found->second;
+				result = found->second.get();
 			} else if (!ignore_root_state && d_root != nullptr) {
 				result = d_root;
 			}
@@ -422,14 +386,12 @@ namespace aho_corasick {
 		using string_type = std::basic_string < CharType > ;
 		using string_ref_type = std::basic_string<CharType>&;
 
-		typedef state<CharType>              state_type;
-		typedef state<CharType>*             state_ptr_type;
-		typedef token<CharType>              token_type;
-		typedef token<CharType>*             token_ptr_type;
-		typedef emit<CharType>               emit_type;
-		typedef emit<CharType>*              emit_ptr_type;
-		typedef std::vector<token_ptr_type>  token_collection; // todo: change to unique_ptrs?
-		typedef std::vector<emit_ptr_type>   emit_collection;  // todo: change to unique_ptrs?
+		typedef state<CharType>         state_type;
+		typedef state<CharType>*        state_ptr_type;
+		typedef token<CharType>         token_type;
+		typedef emit<CharType>          emit_type;
+		typedef std::vector<token_type> token_collection;
+		typedef std::vector<emit_type>  emit_collection;
 
 		class config {
 			bool d_allow_overlaps;
@@ -453,9 +415,9 @@ namespace aho_corasick {
 		};
 
 	private:
-		state_ptr_type   d_root;
-		config           d_config;
-		bool             d_constructed_failure_states;
+		std::unique_ptr<state_type> d_root;
+		config                      d_config;
+		bool                        d_constructed_failure_states;
 
 	public:
 		basic_trie(): basic_trie(config()) {}
@@ -464,11 +426,6 @@ namespace aho_corasick {
 			: d_root(new state_type())
 			, d_config(c)
 			, d_constructed_failure_states(false) {}
-
-		~basic_trie() {
-			delete d_root;
-			d_root = nullptr;
-		}
 
 		basic_trie& case_insensitive() {
 			d_config.set_case_insensitive(true);
@@ -488,9 +445,9 @@ namespace aho_corasick {
 		void add_keyword(const string_ref_type keyword) {
 			if (keyword.empty())
 				return;
-			state_ptr_type cur_state = d_root;
-			for (const auto& c : keyword) {
-				cur_state = cur_state->add_state(c);
+			state_ptr_type cur_state = d_root.get();
+			for (const auto& ch : keyword) {
+				cur_state = cur_state->add_state(ch);
 			}
 			cur_state->add_emit(keyword);
 		}
@@ -500,14 +457,14 @@ namespace aho_corasick {
 			auto collected_emits = parse_text(text);
 			size_t last_pos = -1;
 			for (const auto& e : collected_emits) {
-				if (e->get_start() - last_pos > 1) {
+				if (e.get_start() - last_pos > 1) {
 					tokens.push_back(create_fragment(e, text, last_pos));
 				}
 				tokens.push_back(create_match(e, text));
-				last_pos = e->get_end();
+				last_pos = e.get_end();
 			}
 			if (text.size() - last_pos > 1) {
-				tokens.push_back(create_fragment(nullptr, text, last_pos));
+				tokens.push_back(create_fragment(token_type::emit_type(), text, last_pos));
 			}
 			return token_collection(tokens);
 		}
@@ -515,7 +472,7 @@ namespace aho_corasick {
 		emit_collection parse_text(const string_ref_type text) {
 			check_construct_failure_states();
 			size_t pos = 0;
-			state_ptr_type cur_state = d_root;
+			state_ptr_type cur_state = d_root.get();
 			emit_collection collected_emits;
 			for (auto c : text) {
 				if (d_config.is_case_insensitive()) {
@@ -529,29 +486,35 @@ namespace aho_corasick {
 				remove_partial_matches(text, collected_emits);
 			}
 			if (!d_config.is_allow_overlaps()) {
-				//interval_tree tree(collected_emits);
-				//tree.remove_overlaps(collected_emits);
+				interval_tree<emit_type> tree(interval_tree<emit_type>::interval_collection(collected_emits.begin(), collected_emits.end()));
+				collected_emits.swap(tree.remove_overlaps(collected_emits));
 			}
 			return emit_collection(collected_emits);
 		}
 
 	private:
-		token_ptr_type create_fragment(const emit_ptr_type e, const string_ref_type text, size_t last_pos) const {
-			typename fragment_token<CharType>::string_type substr(text.substr(last_pos + 1, (e == nullptr) ? text.size() : e->get_start()));
-			return new fragment_token<CharType>(substr);
+		token_type create_fragment(const typename token_type::emit_type& e, const string_ref_type text, size_t last_pos) const {
+			auto start = last_pos + 1;
+			auto end = (e.is_empty()) ? text.size() : e.get_start();
+			auto len = end - start;
+			typename token_type::string_type str(text.substr(start, len));
+			return token_type(str);
 		}
 
-		token_ptr_type create_match(emit_ptr_type e, const string_ref_type text) const {
-			typename match_token<CharType>::string_type substr(text.substr(e->get_start(), e->get_end() + 1));
-			return new match_token<CharType>(substr, typename token<CharType>::emit_ptr(e));
+		token_type create_match(const typename token_type::emit_type& e, const string_ref_type text) const {
+			auto start = e.get_start();
+			auto end = e.get_end() + 1;
+			auto len = end - start;
+			typename token_type::string_type str(text.substr(start, len));
+			return token_type(str, e);
 		}
 
 		void remove_partial_matches(const string_ref_type search_text, emit_collection& collected_emits) const {
 			size_t size = search_text.size();
 			emit_collection remove_emits;
 			for (const auto& e : collected_emits) {
-				if ((e->get_start() == 0 || !std::isalpha(search_text.at(e->get_start() - 1))) &&
-					(e->get_end() + 1 == size || !std::isalpha(search_text.at(e->get_end() + 1)))
+				if ((e.get_start() == 0 || !std::isalpha(search_text.at(e.get_start() - 1))) &&
+					(e.get_end() + 1 == size || !std::isalpha(search_text.at(e.get_end() + 1)))
 					) {
 					continue;
 				}
@@ -564,7 +527,7 @@ namespace aho_corasick {
 			}
 		}
 
-		state_ptr_type get_state(state_ptr_type cur_state, char c) const {
+		state_ptr_type get_state(state_ptr_type cur_state, CharType c) const {
 			state_ptr_type result = cur_state->next_state(c);
 			while (result == nullptr) {
 				cur_state = cur_state->failure();
@@ -582,7 +545,7 @@ namespace aho_corasick {
 		void construct_failure_states() {
 			std::queue<state_ptr_type> q;
 			for (auto& depth_one_state : d_root->get_states()) {
-				depth_one_state->set_failure(d_root);
+				depth_one_state->set_failure(d_root.get());
 				q.push(depth_one_state);
 			}
 			d_constructed_failure_states = true;
@@ -609,8 +572,8 @@ namespace aho_corasick {
 			auto emits = cur_state->get_emits();
 			if (!emits.empty()) {
 				for (const auto& str : emits) {
-					auto emit_str = typename emit<CharType>::string_type(str);
-					collected_emits.push_back(new emit<CharType>(pos - emit_str.size() + 1, pos, emit_str));
+					auto emit_str = typename emit_type::string_type(str);
+					collected_emits.push_back(emit_type(pos - emit_str.size() + 1, pos, emit_str));
 				}
 			}
 		}
@@ -618,8 +581,7 @@ namespace aho_corasick {
 
 	typedef basic_trie<char>     trie;
 	typedef basic_trie<wchar_t>  wtrie;
-	typedef basic_trie<char16_t> u16trie;
-	typedef basic_trie<char32_t> u32trie;
+
 
 } // namespace aho_corasick
 
