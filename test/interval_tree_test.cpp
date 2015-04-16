@@ -59,6 +59,6 @@ TEST_CASE("interval_tree works as required", "[interval_tree]") {
 		intervals.push_back(ac::interval(12, 16));
 		ac::interval_tree<ac::interval> tree(intervals);
 		auto result = tree.remove_overlaps(intervals);
-		REQUIRE(3 == result.size());
+		REQUIRE(2 == result.size());
 	}
 }
