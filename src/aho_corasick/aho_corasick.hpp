@@ -244,7 +244,7 @@ namespace aho_corasick {
 			: interval(-1, -1)
 			, d_keyword() {}
 
-		emit(size_t start, size_t end, const string_ref_type keyword)
+		emit(size_t start, size_t end, string_type keyword)
 			: interval(start, end)
 			, d_keyword(keyword) {}
 
@@ -271,12 +271,12 @@ namespace aho_corasick {
 		emit_type   d_emit;
 
 	public:
-		token(const string_ref_type fragment)
+		token(string_ref_type fragment)
 			: d_type(TYPE_FRAGMENT)
 			, d_fragment(fragment)
 			, d_emit() {}
 
-		token(const string_ref_type fragment, const emit_type& e)
+		token(string_ref_type fragment, const emit_type& e)
 			: d_type(TYPE_MATCH)
 			, d_fragment(fragment)
 			, d_emit(e) {}
@@ -334,7 +334,7 @@ namespace aho_corasick {
 
 		size_t get_depth() const { return d_depth; }
 
-		void add_emit(const string_ref_type keyword) {
+		void add_emit(string_ref_type keyword) {
 			d_emits.insert(keyword);
 		}
 
@@ -442,7 +442,7 @@ namespace aho_corasick {
 			return (*this);
 		}
 
-		void add_keyword(const string_ref_type keyword) {
+		void add_keyword(string_type keyword) {
 			if (keyword.empty())
 				return;
 			state_ptr_type cur_state = d_root.get();
@@ -452,7 +452,7 @@ namespace aho_corasick {
 			cur_state->add_emit(keyword);
 		}
 
-		token_collection tokenise(const string_ref_type text) {
+		token_collection tokenise(string_type text) {
 			token_collection tokens;
 			auto collected_emits = parse_text(text);
 			size_t last_pos = -1;
@@ -464,12 +464,12 @@ namespace aho_corasick {
 				last_pos = e.get_end();
 			}
 			if (text.size() - last_pos > 1) {
-				tokens.push_back(create_fragment(token_type::emit_type(), text, last_pos));
+				tokens.push_back(create_fragment(typename token_type::emit_type(), text, last_pos));
 			}
 			return token_collection(tokens);
 		}
 
-		emit_collection parse_text(const string_ref_type text) {
+		emit_collection parse_text(string_type text) {
 			check_construct_failure_states();
 			size_t pos = 0;
 			state_ptr_type cur_state = d_root.get();
@@ -486,14 +486,15 @@ namespace aho_corasick {
 				remove_partial_matches(text, collected_emits);
 			}
 			if (!d_config.is_allow_overlaps()) {
-				interval_tree<emit_type> tree(interval_tree<emit_type>::interval_collection(collected_emits.begin(), collected_emits.end()));
-				collected_emits.swap(tree.remove_overlaps(collected_emits));
+				interval_tree<emit_type> tree(typename interval_tree<emit_type>::interval_collection(collected_emits.begin(), collected_emits.end()));
+				auto tmp = tree.remove_overlaps(collected_emits);
+				collected_emits.swap(tmp);
 			}
 			return emit_collection(collected_emits);
 		}
 
 	private:
-		token_type create_fragment(const typename token_type::emit_type& e, const string_ref_type text, size_t last_pos) const {
+		token_type create_fragment(const typename token_type::emit_type& e, string_ref_type text, size_t last_pos) const {
 			auto start = last_pos + 1;
 			auto end = (e.is_empty()) ? text.size() : e.get_start();
 			auto len = end - start;
@@ -501,7 +502,7 @@ namespace aho_corasick {
 			return token_type(str);
 		}
 
-		token_type create_match(const typename token_type::emit_type& e, const string_ref_type text) const {
+		token_type create_match(const typename token_type::emit_type& e, string_ref_type text) const {
 			auto start = e.get_start();
 			auto end = e.get_end() + 1;
 			auto len = end - start;
@@ -509,7 +510,7 @@ namespace aho_corasick {
 			return token_type(str, e);
 		}
 
-		void remove_partial_matches(const string_ref_type search_text, emit_collection& collected_emits) const {
+		void remove_partial_matches(string_ref_type search_text, emit_collection& collected_emits) const {
 			size_t size = search_text.size();
 			emit_collection remove_emits;
 			for (const auto& e : collected_emits) {

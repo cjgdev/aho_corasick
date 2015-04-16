@@ -30,13 +30,13 @@ namespace ac = aho_corasick;
 TEST_CASE("emit works as required", "[emit]") {
 	using emit = ac::emit<char>;
 	SECTION("equals") {
-		emit one(13, 42, std::string(""));
-		emit two(13, 42, std::string(""));
+		emit one(13, 42, "");
+		emit two(13, 42, "");
 		REQUIRE(one == two);
 	}
 	SECTION("not equals") {
-		emit one(13, 42, std::string(""));
-		emit two(13, 43, std::string(""));
+		emit one(13, 42, "");
+		emit two(13, 43, "");
 		REQUIRE(one != two);
 	}
 }

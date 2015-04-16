@@ -29,146 +29,145 @@
 namespace ac = aho_corasick;
 
 TEST_CASE("trie works as required", "[trie]") {
-	auto check_emit = [](const ac::emit<char>& next, size_t expect_start, size_t expect_end, const std::string& expect_keyword) -> void {
+	auto check_emit = [](const ac::emit<char>& next, size_t expect_start, size_t expect_end, std::string expect_keyword) -> void {
 		REQUIRE(expect_start == next.get_start());
 		REQUIRE(expect_end == next.get_end());
 		REQUIRE(expect_keyword == next.get_keyword());
 	};
-	auto check_wemit = [](const ac::emit<wchar_t>& next, size_t expect_start, size_t expect_end, const std::wstring& expect_keyword) -> void {
+	auto check_wemit = [](const ac::emit<wchar_t>& next, size_t expect_start, size_t expect_end, std::wstring expect_keyword) -> void {
 		REQUIRE(expect_start == next.get_start());
 		REQUIRE(expect_end == next.get_end());
 		REQUIRE(expect_keyword == next.get_keyword());
 	};
-	auto check_token = [](const ac::trie::token_type& next, const std::string& expect_fragment) -> void {
+	auto check_token = [](const ac::trie::token_type& next, std::string expect_fragment) -> void {
 		REQUIRE(expect_fragment == next.get_fragment());
 	};
 	SECTION("keyword and text are the same") {
 		ac::trie t;
-		t.add_keyword(std::string("abc"));
-		auto emits = t.parse_text(std::string("abc"));
+		t.add_keyword("abc");
+		auto emits = t.parse_text("abc");
 		auto it = emits.begin();
-		check_emit(*it, 0, 2, std::string("abc"));
+		check_emit(*it, 0, 2, "abc");
 	}
 	SECTION("text is longer than the keyword") {
 		ac::trie t;
-		t.add_keyword(std::string("abc"));
+		t.add_keyword("abc");
 
-		auto emits = t.parse_text(std::string(" abc"));
+		auto emits = t.parse_text(" abc");
 
 		auto it = emits.begin();
-		check_emit(*it, 1, 3, std::string("abc"));
+		check_emit(*it, 1, 3, "abc");
 	}
 	SECTION("various keywords one match") {
 		ac::trie t;
-		t.add_keyword(std::string("abc"));
-		t.add_keyword(std::string("bcd"));
-		t.add_keyword(std::string("cde"));
+		t.add_keyword("abc");
+		t.add_keyword("bcd");
+		t.add_keyword("cde");
 
-		auto emits = t.parse_text(std::string("bcd"));
+		auto emits = t.parse_text("bcd");
 
 		auto it = emits.begin();
-		check_emit(*it, 0, 2, std::string("bcd"));
+		check_emit(*it, 0, 2, "bcd");
 	}
 	SECTION("ushers test") {
 		ac::trie t;
-		t.add_keyword(std::string("hers"));
-		t.add_keyword(std::string("his"));
-		t.add_keyword(std::string("she"));
-		t.add_keyword(std::string("he"));
+		t.add_keyword("hers");
+		t.add_keyword("his");
+		t.add_keyword("she");
+		t.add_keyword("he");
 
-		auto emits = t.parse_text(std::string("ushers"));
+		auto emits = t.parse_text("ushers");
 		REQUIRE(3 == emits.size());
 
 		auto it = emits.begin();
-		check_emit(*it++, 2, 3, std::string("he"));
-		check_emit(*it++, 1, 3, std::string("she"));
-		check_emit(*it++, 2, 5, std::string("hers"));
+		check_emit(*it++, 2, 3, "he");
+		check_emit(*it++, 1, 3, "she");
+		check_emit(*it++, 2, 5, "hers");
 	}
 	SECTION("misleading test") {
 		ac::trie t;
-		t.add_keyword(std::string("hers"));
+		t.add_keyword("hers");
 
-		auto emits = t.parse_text(std::string("h he her hers"));
+		auto emits = t.parse_text("h he her hers");
 
 		auto it = emits.begin();
-		check_emit(*it++, 9, 12, std::string("hers"));
+		check_emit(*it++, 9, 12, "hers");
 	}
 	SECTION("recipes") {
 		ac::trie t;
-		t.add_keyword(std::string("veal"));
-		t.add_keyword(std::string("cauliflower"));
-		t.add_keyword(std::string("broccoli"));
-		t.add_keyword(std::string("tomatoes"));
+		t.add_keyword("veal");
+		t.add_keyword("cauliflower");
+		t.add_keyword("broccoli");
+		t.add_keyword("tomatoes");
 
-		auto emits = t.parse_text(std::string("2 cauliflowers, 3 tomatoes, 4 slices of veal, 100g broccoli"));
+		auto emits = t.parse_text("2 cauliflowers, 3 tomatoes, 4 slices of veal, 100g broccoli");
 		REQUIRE(4 == emits.size());
 
 		auto it = emits.begin();
-		check_emit(*it++, 2, 12, std::string("cauliflower"));
-		check_emit(*it++, 18, 25, std::string("tomatoes"));
-		check_emit(*it++, 40, 43, std::string("veal"));
-		check_emit(*it++, 51, 58, std::string("broccoli"));
+		check_emit(*it++, 2, 12, "cauliflower");
+		check_emit(*it++, 18, 25, "tomatoes");
+		check_emit(*it++, 40, 43, "veal");
+		check_emit(*it++, 51, 58, "broccoli");
 	}
 	SECTION("long and short overlapping match") {
 		ac::trie t;
-		t.add_keyword(std::string("he"));
-		t.add_keyword(std::string("hehehehe"));
+		t.add_keyword("he");
+		t.add_keyword("hehehehe");
 
-		auto emits = t.parse_text(std::string("hehehehehe"));
+		auto emits = t.parse_text("hehehehehe");
 		REQUIRE(7 == emits.size());
 
 		auto it = emits.begin();
-		check_emit(*it++, 0, 1, std::string("he"));
-		check_emit(*it++, 2, 3, std::string("he"));
-		check_emit(*it++, 4, 5, std::string("he"));
-		check_emit(*it++, 6, 7, std::string("he"));
-		check_emit(*it++, 0, 7, std::string("hehehehe"));
-		check_emit(*it++, 8, 9, std::string("he"));
-		check_emit(*it++, 2, 9, std::string("hehehehe"));
+		check_emit(*it++, 0, 1, "he");
+		check_emit(*it++, 2, 3, "he");
+		check_emit(*it++, 4, 5, "he");
+		check_emit(*it++, 6, 7, "he");
+		check_emit(*it++, 0, 7, "hehehehe");
+		check_emit(*it++, 8, 9, "he");
+		check_emit(*it++, 2, 9, "hehehehe");
 	}
 	SECTION("non overlapping") {
 		ac::trie t;
 		t.remove_overlaps();
-		t.add_keyword(std::string("ab"));
-		t.add_keyword(std::string("cba"));
-		t.add_keyword(std::string("ababc"));
+		t.add_keyword("ab");
+		t.add_keyword("cba");
+		t.add_keyword("ababc");
 
-		auto emits = t.parse_text(std::string("ababcbab"));
+		auto emits = t.parse_text("ababcbab");
 		REQUIRE(2 == emits.size());
 
 		auto it = emits.begin();
-		check_emit(*it++, 0, 4, std::string("ababc"));
-		check_emit(*it++, 6, 7, std::string("ab"));
+		check_emit(*it++, 0, 4, "ababc");
+		check_emit(*it++, 6, 7, "ab");
 	}
 	SECTION("partial match") {
 		ac::trie t;
 		t.only_whole_words();
-		t.add_keyword(std::string("sugar"));
+		t.add_keyword("sugar");
 
-		auto emits = t.parse_text(std::string("sugarcane sugarcane sugar canesugar"));
+		auto emits = t.parse_text("sugarcane sugarcane sugar canesugar");
 		REQUIRE(1 == emits.size());
 
 		auto it = emits.begin();
-		check_emit(*it, 20, 24, std::string("sugar"));
+		check_emit(*it, 20, 24, "sugar");
 	}
 	SECTION("tokenise tokens in sequence") {
 		ac::trie t;
-		t.add_keyword(std::string("Alpha"));
-		t.add_keyword(std::string("Beta"));
-		t.add_keyword(std::string("Gamma"));
+		t.add_keyword("Alpha");
+		t.add_keyword("Beta");
+		t.add_keyword("Gamma");
 
-		auto tokens = t.tokenise(std::string("Alpha Beta Gamma"));
+		auto tokens = t.tokenise("Alpha Beta Gamma");
 		REQUIRE(5 == tokens.size());
 	}
 	SECTION("tokenise full sentence") {
 		ac::trie t;
 		t.only_whole_words();
-		t.add_keyword(std::string("Alpha"));
-		t.add_keyword(std::string("Beta"));
-		t.add_keyword(std::string("Gamma"));
+		t.add_keyword("Alpha");
+		t.add_keyword("Beta");
+		t.add_keyword("Gamma");
 
-		ac::trie::string_type text("Hear: Alpha team first, Beta from the rear, Gamma in reserve");
-		auto tokens = t.tokenise(text);
+		auto tokens = t.tokenise("Hear: Alpha team first, Beta from the rear, Gamma in reserve");
 		REQUIRE(7 == tokens.size());
 
 		auto it = tokens.begin();
@@ -183,31 +182,31 @@ TEST_CASE("trie works as required", "[trie]") {
 	SECTION("wtrie case insensitive") {
 		ac::wtrie t;
 		t.case_insensitive().only_whole_words();
-		t.add_keyword(std::wstring(L"turning"));
-		t.add_keyword(std::wstring(L"once"));
-		t.add_keyword(std::wstring(L"again"));
+		t.add_keyword(L"turning");
+		t.add_keyword(L"once");
+		t.add_keyword(L"again");
 
-		auto emits = t.parse_text(std::wstring(L"TurninG OnCe AgAiN"));
+		auto emits = t.parse_text(L"TurninG OnCe AgAiN");
 		REQUIRE(3 == emits.size());
 
 		auto it = emits.begin();
-		check_wemit(*it++, 0, 6, std::wstring(L"turning"));
-		check_wemit(*it++, 8, 11, std::wstring(L"once"));
-		check_wemit(*it++, 13, 17, std::wstring(L"again"));
+		check_wemit(*it++, 0, 6, L"turning");
+		check_wemit(*it++, 8, 11, L"once");
+		check_wemit(*it++, 13, 17, L"again");
 	}
 	SECTION("trie case insensitive") {
 		ac::trie t;
 		t.case_insensitive();
-		t.add_keyword(std::string("turning"));
-		t.add_keyword(std::string("once"));
-		t.add_keyword(std::string("again"));
+		t.add_keyword("turning");
+		t.add_keyword("once");
+		t.add_keyword("again");
 
-		auto emits = t.parse_text(std::string("TurninG OnCe AgAiN"));
+		auto emits = t.parse_text("TurninG OnCe AgAiN");
 		REQUIRE(3 == emits.size());
 
 		auto it = emits.begin();
-		check_emit(*it++, 0, 6, std::string("turning"));
-		check_emit(*it++, 8, 11, std::string("once"));
-		check_emit(*it++, 13, 17, std::string("again"));
+		check_emit(*it++, 0, 6, "turning");
+		check_emit(*it++, 8, 11, "once");
+		check_emit(*it++, 13, 17, "again");
 	}
 }

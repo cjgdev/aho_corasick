@@ -12,11 +12,11 @@ The following will create a narrow string trie (for wide string support use aho_
 
 ```cpp
 aho_corasick::trie trie;
-trie.add_keyword(std::string("hers");
-trie.add_keyword(std::string("his");
-trie.add_keyword(std::string("she");
-trie.add_keyword(std::string("he");
-auto result = trie.parse_text(std::string("ushers"));
+trie.add_keyword("hers");
+trie.add_keyword("his");
+trie.add_keyword("she");
+trie.add_keyword("he");
+auto result = trie.parse_text("ushers");
 ```
 
 It is also possible to remove overlapping instances, although it should be noted that this won't lower the runtime complexity. The rules that govern conflict resolution are 1. longer matches are favoured over shorter matches, and 2. left-most matches are favoured over right-most matches.
@@ -24,9 +24,9 @@ It is also possible to remove overlapping instances, although it should be noted
 ```cpp
 aho_corasick::trie trie;
 trie.remove_overlaps();
-trie.add_keyword(std::string("hot");
-trie.add_keyword(std::string("hot chocolate");
-auto result = trie.parse_text(std::string("hot chocolate"));
+trie.add_keyword("hot");
+trie.add_keyword("hot chocolate");
+auto result = trie.parse_text("hot chocolate");
 ```
 
 Sometimes it is relevant to search an input text which features a mixed case, making it harder to find matches. In this instance, the trie can lowercase the input text to ease the matching process.
@@ -34,8 +34,8 @@ Sometimes it is relevant to search an input text which features a mixed case, ma
 ```cpp
 aho_corasick::trie trie;
 trie.case_insensitive();
-trie.add_keyword(std::string("casing");
-auto result = trie.parse_text(std::string("CaSiNg"));
+trie.add_keyword("casing");
+auto result = trie.parse_text("CaSiNg");
 ```
 
 For some use-cases it is necessary to process both matching and non-matching text. In this case, you can use trie::tokenise.
@@ -45,10 +45,10 @@ aho_corasick::trie trie;
 trie.remove_overlaps()
     .only_whole_words()
     .case_insensitive();
-trie.add_keyword(std::string("great question");
-trie.add_keyword(std::string("forty-two");
-trie.add_keyword(std::string("deep thought");
-auto tokens = trie.tokenise(std::string("The Answer to the Great Question... Of Life, the Universe and Everything... Is... Forty-two, said Deep Thought, with infinite majesty and calm."));
+trie.add_keyword("great question");
+trie.add_keyword("forty-two");
+trie.add_keyword("deep thought");
+auto tokens = trie.tokenise("The Answer to the Great Question... Of Life, the Universe and Everything... Is... Forty-two, said Deep Thought, with infinite majesty and calm.");
 std::stringstream html;
 html << "<html><body><p>";
 for (const auto& token : tokens) {
