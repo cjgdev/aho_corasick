@@ -17,15 +17,15 @@ string gen_str(size_t len) {
 			"ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 			"abcdefghijklmnopqrstuvwxyz";
 
-	char str[len];
+	string str;
 	for (int i = 0; i < len; ++i) {
-		str[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+		str.append(1, alphanum[rand() % (sizeof(alphanum) - 1)]);
 	}
 	return string(str);
 }
 
 size_t bench_naive(vector<string> text_strings, vector<string> patterns) {
-	size_t count;
+	size_t count = 0;
 	for (auto& text : text_strings) {
 		for (auto& pattern : patterns) {
 			size_t pos = text.find(pattern);
@@ -39,7 +39,7 @@ size_t bench_naive(vector<string> text_strings, vector<string> patterns) {
 }
 
 size_t bench_aho_corasick(vector<string> text_strings, trie& t) {
-	size_t count;
+	size_t count = 0;
 	for (auto& text : text_strings) {
 		auto matches = t.parse_text(text);
 		count += matches.size();
