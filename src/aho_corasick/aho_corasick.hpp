@@ -380,7 +380,7 @@ namespace aho_corasick {
 		}
 	};
 
-	template<typename CharType = wchar_t>
+	template<typename CharType>
 	class basic_trie {
 	public:
 		using string_type = std::basic_string < CharType > ;
@@ -442,7 +442,7 @@ namespace aho_corasick {
 			return (*this);
 		}
 
-		void add_keyword(string_type keyword) {
+		void insert(string_type keyword) {
 			if (keyword.empty())
 				return;
 			state_ptr_type cur_state = d_root.get();
@@ -450,6 +450,13 @@ namespace aho_corasick {
 				cur_state = cur_state->add_state(ch);
 			}
 			cur_state->add_emit(keyword);
+		}
+
+		template<class InputIterator>
+		void insert(InputIterator first, InputIterator last) {
+			for (InputIterator it = first; first != last; ++it) {
+				insert(*it);
+			}
 		}
 
 		token_collection tokenise(string_type text) {

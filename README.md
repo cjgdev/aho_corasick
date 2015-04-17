@@ -15,10 +15,10 @@ The following will create a narrow string trie (for wide string support use aho_
 
 ```cpp
 aho_corasick::trie trie;
-trie.add_keyword("hers");
-trie.add_keyword("his");
-trie.add_keyword("she");
-trie.add_keyword("he");
+trie.insert("hers");
+trie.insert("his");
+trie.insert("she");
+trie.insert("he");
 auto result = trie.parse_text("ushers");
 ```
 
@@ -27,8 +27,8 @@ It is also possible to remove overlapping instances, although it should be noted
 ```cpp
 aho_corasick::trie trie;
 trie.remove_overlaps();
-trie.add_keyword("hot");
-trie.add_keyword("hot chocolate");
+trie.insert("hot");
+trie.insert("hot chocolate");
 auto result = trie.parse_text("hot chocolate");
 ```
 
@@ -37,7 +37,7 @@ Sometimes it is relevant to search an input text which features a mixed case, ma
 ```cpp
 aho_corasick::trie trie;
 trie.case_insensitive();
-trie.add_keyword("casing");
+trie.insert("casing");
 auto result = trie.parse_text("CaSiNg");
 ```
 
@@ -48,9 +48,9 @@ aho_corasick::trie trie;
 trie.remove_overlaps()
     .only_whole_words()
     .case_insensitive();
-trie.add_keyword("great question");
-trie.add_keyword("forty-two");
-trie.add_keyword("deep thought");
+trie.insert("great question");
+trie.insert("forty-two");
+trie.insert("deep thought");
 auto tokens = trie.tokenise("The Answer to the Great Question... Of Life, the Universe and Everything... Is... Forty-two, said Deep Thought, with infinite majesty and calm.");
 std::stringstream html;
 html << "<html><body><p>";

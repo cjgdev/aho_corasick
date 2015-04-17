@@ -44,14 +44,14 @@ TEST_CASE("trie works as required", "[trie]") {
 	};
 	SECTION("keyword and text are the same") {
 		ac::trie t;
-		t.add_keyword("abc");
+		t.insert("abc");
 		auto emits = t.parse_text("abc");
 		auto it = emits.begin();
 		check_emit(*it, 0, 2, "abc");
 	}
 	SECTION("text is longer than the keyword") {
 		ac::trie t;
-		t.add_keyword("abc");
+		t.insert("abc");
 
 		auto emits = t.parse_text(" abc");
 
@@ -60,9 +60,9 @@ TEST_CASE("trie works as required", "[trie]") {
 	}
 	SECTION("various keywords one match") {
 		ac::trie t;
-		t.add_keyword("abc");
-		t.add_keyword("bcd");
-		t.add_keyword("cde");
+		t.insert("abc");
+		t.insert("bcd");
+		t.insert("cde");
 
 		auto emits = t.parse_text("bcd");
 
@@ -71,10 +71,10 @@ TEST_CASE("trie works as required", "[trie]") {
 	}
 	SECTION("ushers test") {
 		ac::trie t;
-		t.add_keyword("hers");
-		t.add_keyword("his");
-		t.add_keyword("she");
-		t.add_keyword("he");
+		t.insert("hers");
+		t.insert("his");
+		t.insert("she");
+		t.insert("he");
 
 		auto emits = t.parse_text("ushers");
 		REQUIRE(3 == emits.size());
@@ -86,7 +86,7 @@ TEST_CASE("trie works as required", "[trie]") {
 	}
 	SECTION("misleading test") {
 		ac::trie t;
-		t.add_keyword("hers");
+		t.insert("hers");
 
 		auto emits = t.parse_text("h he her hers");
 
@@ -95,10 +95,10 @@ TEST_CASE("trie works as required", "[trie]") {
 	}
 	SECTION("recipes") {
 		ac::trie t;
-		t.add_keyword("veal");
-		t.add_keyword("cauliflower");
-		t.add_keyword("broccoli");
-		t.add_keyword("tomatoes");
+		t.insert("veal");
+		t.insert("cauliflower");
+		t.insert("broccoli");
+		t.insert("tomatoes");
 
 		auto emits = t.parse_text("2 cauliflowers, 3 tomatoes, 4 slices of veal, 100g broccoli");
 		REQUIRE(4 == emits.size());
@@ -111,8 +111,8 @@ TEST_CASE("trie works as required", "[trie]") {
 	}
 	SECTION("long and short overlapping match") {
 		ac::trie t;
-		t.add_keyword("he");
-		t.add_keyword("hehehehe");
+		t.insert("he");
+		t.insert("hehehehe");
 
 		auto emits = t.parse_text("hehehehehe");
 		REQUIRE(7 == emits.size());
@@ -129,9 +129,9 @@ TEST_CASE("trie works as required", "[trie]") {
 	SECTION("non overlapping") {
 		ac::trie t;
 		t.remove_overlaps();
-		t.add_keyword("ab");
-		t.add_keyword("cba");
-		t.add_keyword("ababc");
+		t.insert("ab");
+		t.insert("cba");
+		t.insert("ababc");
 
 		auto emits = t.parse_text("ababcbab");
 		REQUIRE(2 == emits.size());
@@ -143,7 +143,7 @@ TEST_CASE("trie works as required", "[trie]") {
 	SECTION("partial match") {
 		ac::trie t;
 		t.only_whole_words();
-		t.add_keyword("sugar");
+		t.insert("sugar");
 
 		auto emits = t.parse_text("sugarcane sugarcane sugar canesugar");
 		REQUIRE(1 == emits.size());
@@ -153,9 +153,9 @@ TEST_CASE("trie works as required", "[trie]") {
 	}
 	SECTION("tokenise tokens in sequence") {
 		ac::trie t;
-		t.add_keyword("Alpha");
-		t.add_keyword("Beta");
-		t.add_keyword("Gamma");
+		t.insert("Alpha");
+		t.insert("Beta");
+		t.insert("Gamma");
 
 		auto tokens = t.tokenise("Alpha Beta Gamma");
 		REQUIRE(5 == tokens.size());
@@ -163,9 +163,9 @@ TEST_CASE("trie works as required", "[trie]") {
 	SECTION("tokenise full sentence") {
 		ac::trie t;
 		t.only_whole_words();
-		t.add_keyword("Alpha");
-		t.add_keyword("Beta");
-		t.add_keyword("Gamma");
+		t.insert("Alpha");
+		t.insert("Beta");
+		t.insert("Gamma");
 
 		auto tokens = t.tokenise("Hear: Alpha team first, Beta from the rear, Gamma in reserve");
 		REQUIRE(7 == tokens.size());
@@ -182,9 +182,9 @@ TEST_CASE("trie works as required", "[trie]") {
 	SECTION("wtrie case insensitive") {
 		ac::wtrie t;
 		t.case_insensitive().only_whole_words();
-		t.add_keyword(L"turning");
-		t.add_keyword(L"once");
-		t.add_keyword(L"again");
+		t.insert(L"turning");
+		t.insert(L"once");
+		t.insert(L"again");
 
 		auto emits = t.parse_text(L"TurninG OnCe AgAiN");
 		REQUIRE(3 == emits.size());
@@ -197,9 +197,9 @@ TEST_CASE("trie works as required", "[trie]") {
 	SECTION("trie case insensitive") {
 		ac::trie t;
 		t.case_insensitive();
-		t.add_keyword("turning");
-		t.add_keyword("once");
-		t.add_keyword("again");
+		t.insert("turning");
+		t.insert("once");
+		t.insert("again");
 
 		auto emits = t.parse_text("TurninG OnCe AgAiN");
 		REQUIRE(3 == emits.size());
