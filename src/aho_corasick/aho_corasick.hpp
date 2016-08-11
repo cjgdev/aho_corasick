@@ -115,11 +115,11 @@ namespace aho_corasick {
 			}
 
 			size_t determine_median(const interval_collection& intervals) const {
-				size_t start = -1;
-				size_t end = -1;
+				int start = -1;
+				int end = -1;
 				for (const auto& i : intervals) {
-					size_t cur_start = i.get_start();
-					size_t cur_end = i.get_end();
+					int cur_start = i.get_start();
+					int cur_end = i.get_end();
 					if (start == -1 || cur_start < start) {
 						start = cur_start;
 					}
