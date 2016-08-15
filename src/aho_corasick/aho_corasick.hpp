@@ -30,6 +30,7 @@
 #include <set>
 #include <string>
 #include <queue>
+#include <utility>
 #include <vector>
 
 namespace aho_corasick {
@@ -74,7 +75,7 @@ namespace aho_corasick {
 	class interval_tree {
 	public:
 		using interval_collection = std::vector<T>;
-		
+
 	private:
 		// class node
 		class node {
@@ -238,17 +239,19 @@ namespace aho_corasick {
 
 	private:
 		string_type d_keyword;
+		unsigned    d_index = 0;
 
 	public:
 		emit()
 			: interval(-1, -1)
 			, d_keyword() {}
 
-		emit(size_t start, size_t end, string_type keyword)
+		emit(size_t start, size_t end, string_type keyword, unsigned index)
 			: interval(start, end)
-			, d_keyword(keyword) {}
+			, d_keyword(keyword), d_index(index) {}
 
 		string_type get_keyword() const { return string_type(d_keyword); }
+		unsigned get_index() const { return d_index; }
 		bool is_empty() const { return (get_start() == -1 && get_end() == -1); }
 	};
 
@@ -294,7 +297,8 @@ namespace aho_corasick {
 		typedef std::unique_ptr<state<CharType>> unique_ptr;
 		typedef std::basic_string<CharType>      string_type;
 		typedef std::basic_string<CharType>&     string_ref_type;
-		typedef std::set<string_type>            string_collection;
+		typedef std::pair<string_type, unsigned> key_index;
+		typedef std::set<key_index>              string_collection;
 		typedef std::vector<ptr>                 state_collection;
 		typedef std::vector<CharType>            transition_collection;
 
@@ -334,14 +338,14 @@ namespace aho_corasick {
 
 		size_t get_depth() const { return d_depth; }
 
-		void add_emit(string_ref_type keyword) {
-			d_emits.insert(keyword);
+		void add_emit(string_ref_type keyword, unsigned index) {
+			d_emits.insert(std::make_pair(keyword, index));
 		}
 
 		void add_emit(const string_collection& emits) {
 			for (const auto& e : emits) {
-				string_type str(e);
-				add_emit(str);
+				string_type str(e.first);
+				add_emit(str, e.second);
 			}
 		}
 
@@ -418,6 +422,7 @@ namespace aho_corasick {
 		std::unique_ptr<state_type> d_root;
 		config                      d_config;
 		bool                        d_constructed_failure_states;
+		unsigned                    d_num_keywords = 0;
 
 	public:
 		basic_trie(): basic_trie(config()) {}
@@ -449,7 +454,7 @@ namespace aho_corasick {
 			for (const auto& ch : keyword) {
 				cur_state = cur_state->add_state(ch);
 			}
-			cur_state->add_emit(keyword);
+			cur_state->add_emit(keyword, d_num_keywords++);
 		}
 
 		template<class InputIterator>
@@ -580,8 +585,8 @@ namespace aho_corasick {
 			auto emits = cur_state->get_emits();
 			if (!emits.empty()) {
 				for (const auto& str : emits) {
-					auto emit_str = typename emit_type::string_type(str);
-					collected_emits.push_back(emit_type(pos - emit_str.size() + 1, pos, emit_str));
+					auto emit_str = typename emit_type::string_type(str.first);
+					collected_emits.push_back(emit_type(pos - emit_str.size() + 1, pos, emit_str, str.second));
 				}
 			}
 		}
