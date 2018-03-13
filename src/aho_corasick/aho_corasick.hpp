@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2015 Christopher Gilbert.
+* Copyright (C) 2018 Christopher Gilbert.
 *
 * Permission is hereby granted, free of charge, to any person obtaining a copy
 * of this software and associated documentation files (the "Software"), to deal
@@ -90,7 +90,7 @@ namespace aho_corasick {
 			interval_collection d_intervals;
 
 		public:
-			node(const interval_collection& intervals)
+			explicit node(const interval_collection& intervals)
 				: d_point(0)
 				, d_left(nullptr)
 				, d_right(nullptr)
@@ -116,15 +116,15 @@ namespace aho_corasick {
 			}
 
 			size_t determine_median(const interval_collection& intervals) const {
-				int start = -1;
-				int end = -1;
+				auto start = std::numeric_limits<size_t>::max();
+				auto end   = std::numeric_limits<size_t>::max();
 				for (const auto& i : intervals) {
-					int cur_start = i.get_start();
-					int cur_end = i.get_end();
-					if (start == -1 || cur_start < start) {
+					auto cur_start = i.get_start();
+					auto cur_end = i.get_end();
+					if (start == std::numeric_limits<size_t>::max() || cur_start < start) {
 						start = cur_start;
 					}
-					if (end == -1 || cur_end > end) {
+					if (end == std::numeric_limits<size_t>::max() || cur_end > end) {
 						end = cur_end;
 					}
 				}
@@ -193,7 +193,7 @@ namespace aho_corasick {
 		node d_root;
 
 	public:
-		interval_tree(const interval_collection& intervals)
+		explicit interval_tree(const interval_collection& intervals)
 			: d_root(intervals) {}
 
 		interval_collection remove_overlaps(const interval_collection& intervals) {
@@ -274,7 +274,7 @@ namespace aho_corasick {
 		emit_type   d_emit;
 
 	public:
-		token(string_ref_type fragment)
+		explicit token(string_ref_type fragment)
 			: d_type(TYPE_FRAGMENT)
 			, d_fragment(fragment)
 			, d_emit() {}
@@ -312,7 +312,7 @@ namespace aho_corasick {
 	public:
 		state(): state(0) {}
 
-		state(size_t depth)
+		explicit state(size_t depth)
 			: d_depth(depth)
 			, d_root(depth == 0 ? this : nullptr)
 			, d_success()
