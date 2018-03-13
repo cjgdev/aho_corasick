@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Christopher Gilbert.
+ * Copyright (C) 2018 Christopher Gilbert.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,24 +29,24 @@
 namespace ac = aho_corasick;
 
 TEST_CASE("trie works as required", "[trie]") {
-	auto check_emit = [](const ac::emit<char>& next, size_t expect_start, size_t expect_end, std::string expect_keyword) -> void {
+	const auto check_emit = [](const ac::emit<char>& next, size_t expect_start, size_t expect_end, std::string expect_keyword) -> void {
 		REQUIRE(expect_start == next.get_start());
 		REQUIRE(expect_end == next.get_end());
 		REQUIRE(expect_keyword == next.get_keyword());
 	};
-	auto check_wemit = [](const ac::emit<wchar_t>& next, size_t expect_start, size_t expect_end, std::wstring expect_keyword) -> void {
+	const auto check_wemit = [](const ac::emit<wchar_t>& next, size_t expect_start, size_t expect_end, std::wstring expect_keyword) -> void {
 		REQUIRE(expect_start == next.get_start());
 		REQUIRE(expect_end == next.get_end());
 		REQUIRE(expect_keyword == next.get_keyword());
 	};
-	auto check_token = [](const ac::trie::token_type& next, std::string expect_fragment) -> void {
+	const auto check_token = [](const ac::trie::token_type& next, std::string expect_fragment) -> void {
 		REQUIRE(expect_fragment == next.get_fragment());
 	};
 	SECTION("keyword and text are the same") {
 		ac::trie t;
 		t.insert("abc");
 		auto emits = t.parse_text("abc");
-		auto it = emits.begin();
+		const auto it = emits.begin();
 		check_emit(*it, 0, 2, "abc");
 	}
 	SECTION("text is longer than the keyword") {
@@ -55,7 +55,7 @@ TEST_CASE("trie works as required", "[trie]") {
 
 		auto emits = t.parse_text(" abc");
 
-		auto it = emits.begin();
+		const auto it = emits.begin();
 		check_emit(*it, 1, 3, "abc");
 	}
 	SECTION("various keywords one match") {
@@ -66,7 +66,7 @@ TEST_CASE("trie works as required", "[trie]") {
 
 		auto emits = t.parse_text("bcd");
 
-		auto it = emits.begin();
+		const auto it = emits.begin();
 		check_emit(*it, 0, 2, "bcd");
 	}
 	SECTION("ushers test") {
@@ -148,7 +148,7 @@ TEST_CASE("trie works as required", "[trie]") {
 		auto emits = t.parse_text("sugarcane sugarcane sugar canesugar");
 		REQUIRE(1 == emits.size());
 
-		auto it = emits.begin();
+		const auto it = emits.begin();
 		check_emit(*it, 20, 24, "sugar");
 	}
 	SECTION("tokenise tokens in sequence") {
@@ -157,7 +157,7 @@ TEST_CASE("trie works as required", "[trie]") {
 		t.insert("Beta");
 		t.insert("Gamma");
 
-		auto tokens = t.tokenise("Alpha Beta Gamma");
+		const auto tokens = t.tokenise("Alpha Beta Gamma");
 		REQUIRE(5 == tokens.size());
 	}
 	SECTION("tokenise full sentence") {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015 Christopher Gilbert.
+ * Copyright (C) 2018 Christopher Gilbert.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,7 +30,7 @@ namespace ac = aho_corasick;
 
 TEST_CASE("intervals work as required", "[interval]") {
 	SECTION("construct") {
-		ac::interval i(1, 3);
+		const ac::interval i(1, 3);
 		REQUIRE(1 == i.get_start());
 		REQUIRE(3 == i.get_end());
 	}
@@ -50,10 +50,11 @@ TEST_CASE("intervals work as required", "[interval]") {
 		REQUIRE(!ac::interval(1, 13).overlaps_with(42));
 	}
 	SECTION("comparable") {
-		std::set<ac::interval> intervals;
-		intervals.insert(ac::interval(4, 6));
-		intervals.insert(ac::interval(2, 7));
-		intervals.insert(ac::interval(3, 4));
+		std::set<ac::interval> intervals {
+			ac::interval(4, 6),
+			ac::interval(2, 7),
+			ac::interval(3, 4),
+		};
 		auto it = intervals.begin();
 		REQUIRE(2 == it++->get_start());
 		REQUIRE(3 == it++->get_start());
