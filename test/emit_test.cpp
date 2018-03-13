@@ -28,15 +28,15 @@
 namespace ac = aho_corasick;
 
 TEST_CASE("emit works as required", "[emit]") {
-	using emit = ac::emit<char>;
+	using emit_t = ac::emit<char>;
 	SECTION("equals") {
-		emit one(13, 42, "");
-		emit two(13, 42, "");
+		emit_t one(13, 42, "", 0);
+		emit_t two(13, 42, "", 0);
 		REQUIRE(one == two);
 	}
 	SECTION("not equals") {
-		emit one(13, 42, "");
-		emit two(13, 43, "");
+		emit_t one(13, 42, "", 0);
+		emit_t two(13, 43, "", 0);
 		REQUIRE(one != two);
 	}
 }
