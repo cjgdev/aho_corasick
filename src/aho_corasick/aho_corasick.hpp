@@ -455,6 +455,7 @@ namespace aho_corasick {
 				cur_state = cur_state->add_state(ch);
 			}
 			cur_state->add_emit(keyword, d_num_keywords++);
+			d_constructed_failure_states = false;
 		}
 
 		template<class InputIterator>

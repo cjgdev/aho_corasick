@@ -209,4 +209,19 @@ TEST_CASE("trie works as required", "[trie]") {
 		check_emit(*it++, 8, 11, "once");
 		check_emit(*it++, 13, 17, "again");
 	}
+	SECTION("segault with incremental parsing: github issue #7") {
+		ac::trie t;
+
+		t.insert("hers");
+		t.insert("his");
+		t.insert("he");
+
+		auto result = t.parse_text("she");
+		CHECK(result.size() == 1);
+
+		t.insert("she");
+
+		result = t.parse_text("something");
+		CHECK(result.empty());
+	}
 }
