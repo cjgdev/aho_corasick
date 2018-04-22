@@ -52,7 +52,7 @@ size_t bench_naive(vector<string> text_strings, vector<string> patterns) {
 		for (auto& pattern : patterns) {
 			size_t pos = text.find(pattern);
 			while (pos != text.npos) {
-				pos = text.find(pattern, pos);
+				pos = text.find(pattern, pos + 1);
 				count++;
 			}
 		}
