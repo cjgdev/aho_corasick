@@ -571,7 +571,6 @@ namespace aho_corasick {
 				depth_one_state->set_failure(d_root.get());
 				q.push(depth_one_state);
 			}
-			d_constructed_failure_states = true;
 
 			while (!q.empty()) {
 				auto cur_state = q.front();
