@@ -33,6 +33,7 @@
 #include <utility>
 #include <vector>
 #include <mutex>
+#include <atomic>
 
 namespace aho_corasick {
 
@@ -423,7 +424,7 @@ namespace aho_corasick {
 	private:
 		std::unique_ptr<state_type> d_root;
 		config                      d_config;
-		bool                        d_constructed_failure_states;
+		std::atomic_bool            d_constructed_failure_states;
 		unsigned                    d_num_keywords = 0;
 		mutable std::mutex			d_mutex;
 
@@ -458,7 +459,7 @@ namespace aho_corasick {
 				cur_state = cur_state->add_state(ch);
 			}
 			cur_state->add_emit(keyword, d_num_keywords++);
-			d_constructed_failure_states = false;
+			d_constructed_failure_states.store(false, std::memory_order_relaxed);
 		}
 
 		template<class InputIterator>
@@ -554,10 +555,13 @@ namespace aho_corasick {
 		}
 
 		void check_construct_failure_states() const {
-			if (!d_constructed_failure_states) {
+			bool constructed = d_constructed_failure_states.load(std::memory_order_acquire);
+			if (!constructed) {
 				std::unique_lock<std::mutex> lock(d_mutex);
-				if( !d_constructed_failure_states )
+				constructed = d_constructed_failure_states.load(std::memory_order_relaxed);
+				if(!constructed) {
 					const_cast<my_type*>(this)->construct_failure_states();
+				}
 			}
 		}
 
@@ -585,6 +589,7 @@ namespace aho_corasick {
 				}
 				q.pop();
 			}
+			d_constructed_failure_states.store(true, std::memory_order_release);
 		}
 
 		void store_emits(size_t pos, state_ptr_type cur_state, emit_collection& collected_emits) const {
