@@ -32,6 +32,7 @@
 #include <queue>
 #include <utility>
 #include <vector>
+#include <mutex>
 
 namespace aho_corasick {
 
@@ -396,6 +397,7 @@ namespace aho_corasick {
 		typedef emit<CharType>          emit_type;
 		typedef std::vector<token_type> token_collection;
 		typedef std::vector<emit_type>  emit_collection;
+		typedef basic_trie<CharType>    my_type;
 
 		class config {
 			bool d_allow_overlaps;
@@ -423,6 +425,7 @@ namespace aho_corasick {
 		config                      d_config;
 		bool                        d_constructed_failure_states;
 		unsigned                    d_num_keywords = 0;
+		mutable std::mutex			d_mutex;
 
 	public:
 		basic_trie(): basic_trie(config()) {}
@@ -482,7 +485,7 @@ namespace aho_corasick {
 			return token_collection(tokens);
 		}
 
-		emit_collection parse_text(string_type text) {
+		emit_collection parse_text(string_type text) const {
 			check_construct_failure_states();
 			size_t pos = 0;
 			state_ptr_type cur_state = d_root.get();
@@ -550,9 +553,11 @@ namespace aho_corasick {
 			return result;
 		}
 
-		void check_construct_failure_states() {
+		void check_construct_failure_states() const {
 			if (!d_constructed_failure_states) {
-				construct_failure_states();
+				std::unique_lock<std::mutex> lock(d_mutex);
+				if( !d_constructed_failure_states )
+					const_cast<my_type*>(this)->construct_failure_states();
 			}
 		}
 
