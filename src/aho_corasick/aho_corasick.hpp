@@ -32,6 +32,8 @@
 #include <queue>
 #include <utility>
 #include <vector>
+#include <mutex>
+#include <atomic>
 
 namespace aho_corasick {
 
@@ -396,6 +398,7 @@ namespace aho_corasick {
 		typedef emit<CharType>          emit_type;
 		typedef std::vector<token_type> token_collection;
 		typedef std::vector<emit_type>  emit_collection;
+		typedef basic_trie<CharType>    my_type;
 
 		class config {
 			bool d_allow_overlaps;
@@ -421,8 +424,9 @@ namespace aho_corasick {
 	private:
 		std::unique_ptr<state_type> d_root;
 		config                      d_config;
-		bool                        d_constructed_failure_states;
+		std::atomic_bool            d_constructed_failure_states;
 		unsigned                    d_num_keywords = 0;
+		mutable std::mutex			d_mutex;
 
 	public:
 		basic_trie(): basic_trie(config()) {}
@@ -455,7 +459,7 @@ namespace aho_corasick {
 				cur_state = cur_state->add_state(ch);
 			}
 			cur_state->add_emit(keyword, d_num_keywords++);
-			d_constructed_failure_states = false;
+			d_constructed_failure_states.store(false, std::memory_order_relaxed);
 		}
 
 		template<class InputIterator>
@@ -482,7 +486,7 @@ namespace aho_corasick {
 			return token_collection(tokens);
 		}
 
-		emit_collection parse_text(string_type text) {
+		emit_collection parse_text(string_type text) const {
 			check_construct_failure_states();
 			size_t pos = 0;
 			state_ptr_type cur_state = d_root.get();
@@ -550,9 +554,14 @@ namespace aho_corasick {
 			return result;
 		}
 
-		void check_construct_failure_states() {
-			if (!d_constructed_failure_states) {
-				construct_failure_states();
+		void check_construct_failure_states() const {
+			bool constructed = d_constructed_failure_states.load(std::memory_order_acquire);
+			if (!constructed) {
+				std::unique_lock<std::mutex> lock(d_mutex);
+				constructed = d_constructed_failure_states.load(std::memory_order_relaxed);
+				if(!constructed) {
+					const_cast<my_type*>(this)->construct_failure_states();
+				}
 			}
 		}
 
@@ -562,7 +571,6 @@ namespace aho_corasick {
 				depth_one_state->set_failure(d_root.get());
 				q.push(depth_one_state);
 			}
-			d_constructed_failure_states = true;
 
 			while (!q.empty()) {
 				auto cur_state = q.front();
@@ -580,6 +588,7 @@ namespace aho_corasick {
 				}
 				q.pop();
 			}
+			d_constructed_failure_states.store(true, std::memory_order_release);
 		}
 
 		void store_emits(size_t pos, state_ptr_type cur_state, emit_collection& collected_emits) const {
