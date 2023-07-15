@@ -460,7 +460,7 @@ namespace aho_corasick {
 
 		template<class InputIterator>
 		void insert(InputIterator first, InputIterator last) {
-			for (InputIterator it = first; first != last; ++it) {
+			for (InputIterator it = first; it != last; ++it) {
 				insert(*it);
 			}
 		}
